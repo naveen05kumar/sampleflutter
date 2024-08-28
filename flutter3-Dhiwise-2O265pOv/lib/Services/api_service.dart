@@ -90,9 +90,16 @@ class ApiService {
     return response;
   }
 
-  Future<http.Response> addStaticCamera(
-      {String? ipAddress, String? username, String? password}) async {
-    final token = UserSharedServices.loginDetails()!.accessToken;
+  Future<http.Response> addStaticCamera({
+    String? ipAddress,
+    String? username,
+    String? password,
+  }) async {
+    final token = UserSharedServices.loginDetails()?.accessToken;
+    if (token == null) {
+      throw Exception("Access token is null");
+    }
+
     final response = await http.post(
       Uri.parse('$_baseUrl/camera/static-camera/'),
       headers: {
@@ -102,15 +109,22 @@ class ApiService {
       body: jsonEncode({
         'ip_address': ipAddress,
         'username': username,
-        'password': password
+        'password': password,
       }),
     );
     return response;
   }
 
-  Future<http.Response> addDDNSCamera(
-      {String? ipAddress, String? username, String? password}) async {
-    final token = UserSharedServices.loginDetails()!.accessToken;
+  Future<http.Response> addDDNSCamera({
+    String? ipAddress,
+    String? username,
+    String? password,
+  }) async {
+    final token = UserSharedServices.loginDetails()?.accessToken;
+    if (token == null) {
+      throw Exception("Access token is null");
+    }
+
     final response = await http.post(
       Uri.parse('$_baseUrl/camera/ddns-camera/'),
       headers: {
@@ -120,27 +134,31 @@ class ApiService {
       body: jsonEncode({
         'ddns_hostname': ipAddress,
         'username': username,
-        'password': password
+        'password': password,
       }),
     );
     return response;
   }
 
   Future<StreamUrls> getStreamUrl(String cameraType) async {
-    final token = UserSharedServices.loginDetails()!.accessToken;
-    StreamUrls streamUrls = StreamUrls();
+    final token = UserSharedServices.loginDetails()?.accessToken;
+    if (token == null) {
+      throw Exception("Access token is null");
+    }
+
     final response = await http.get(
       Uri.parse('$_baseUrl/camera/get-stream-url/$cameraType/'),
       headers: {
         'Authorization': 'Bearer $token',
       },
     );
-    if (response.statusCode == 200) {
-      streamUrls = streamUrlsFromJson(response.body);
-    }
-    return streamUrls;
-  }
 
+    if (response.statusCode == 200) {
+      return StreamUrls.fromJson(json.decode(response.body));
+    } else {
+      throw Exception("Failed to load stream URLs: ${response.body}");
+    }
+  }
   static Future<void> emailVerify(BuildContext context, {String? otp}) async {
     if (otp!.isEmpty || otp.length < 6) {
       showSnackBar("Please enter otp to continue", context);
@@ -223,7 +241,12 @@ class ApiService {
     final token = UserSharedServices.loginDetails()!.accessToken;
     String queryString = '';
     if (date != null && month != null && year != null) {
-      queryString = '?date=$date&month=$month&year=$year';
+      // Correctly format the date as YYYY-MM-DD
+      queryString = '?date=$year-$month-$date';
+    } else if (month != null && year != null) {
+      queryString = '?month=$month&year=$year';
+    } else if (year != null) {
+      queryString = '?year=$year';
     }
     final response = await http.get(
       Uri.parse('$_baseUrl/camera/faces/$queryString'),
@@ -237,6 +260,7 @@ class ApiService {
       throw Exception('Failed to load detected faces');
     }
   }
+
 
   Future<http.Response> signInWithGoogle(String token) async {
     final url = Uri.parse('$_baseUrl/auth/google-sign-in/');

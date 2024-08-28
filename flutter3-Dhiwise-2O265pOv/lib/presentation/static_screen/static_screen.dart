@@ -8,7 +8,7 @@ import '../../constants/stream_urls.dart';
 import '../../constants/style.dart';
 import '../../core/app_export.dart';
 import '../../widgets/custom_elevated_button.dart';
-import '../../widgets/custom_text_form_field.dart'; // ignore_for_file: must_be_immutable
+import '../../widgets/custom_text_form_field.dart';
 
 class StaticScreen extends StatelessWidget {
   StaticScreen({Key? key}) : super(key: key);
@@ -134,19 +134,24 @@ class StaticScreen extends StatelessWidget {
         bottom: 22.v,
       ),
       onPressed: () async {
-        final response = await apiService.addStaticCamera(
+        try {
+          final response = await apiService.addStaticCamera(
             password: passwordController.text,
             ipAddress: ipnetworkvalueController.text,
-            username: usernameController.text);
-        if (response.statusCode == 200 || response.statusCode == 201) {
-          final streamUrlsResponse = await apiService.getStreamUrl("static");
-          final urls = streamUrlsResponse.streamUrls ?? [];
-          streamUrlController.streamUrls.addAll(urls);
-          showSnackBar(jsonDecode(response.body)['message'], context);
-          Navigator.pop(context);
-        } else {
-          showSnackBar("Something went wrong.", context);
-          Navigator.pop(context);
+            username: usernameController.text,
+          );
+
+          if (response.statusCode == 200 || response.statusCode == 201) {
+            final streamUrlsResponse = await apiService.getStreamUrl("static"); // or "ddns"
+            final urls = streamUrlsResponse.streamUrls;
+            streamUrlController.streamUrls.addAll(urls.map((url) => url.url).toList());showSnackBar(jsonDecode(response.body)['message'], context);
+            Navigator.pop(context);
+          } else {
+            showSnackBar("Something went wrong.", context);
+            Navigator.pop(context);
+          }
+        } catch (e) {
+          showSnackBar("Error: $e", context);
         }
       },
     );

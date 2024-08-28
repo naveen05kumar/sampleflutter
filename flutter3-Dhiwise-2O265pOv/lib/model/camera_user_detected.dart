@@ -1,7 +1,5 @@
-//lib/model/camera_user_detected.dart
-// To parse this JSON data, do
-//
-//     final cameraDetectedUsers = cameraDetectedUsersFromJson(jsonString);
+
+// lib/model/camera_detected_users.dart
 
 import 'dart:convert';
 
@@ -13,9 +11,9 @@ String cameraDetectedUsersToJson(CameraDetectedUsers data) =>
 
 class CameraDetectedUsers {
   int? count;
-  dynamic next;
-  dynamic previous;
-  List<Result>? results;
+  String? next;
+  String? previous;
+  List<DetectedFace>? results;
 
   CameraDetectedUsers({
     this.count,
@@ -31,44 +29,48 @@ class CameraDetectedUsers {
         previous: json["previous"],
         results: json["results"] == null
             ? []
-            : List<Result>.from(
-                json["results"]!.map((x) => Result.fromJson(x))),
+            : List<DetectedFace>.from(
+            json["results"]!.map((x) => DetectedFace.fromJson(x))),
       );
 
   Map<String, dynamic> toJson() => {
-        "count": count,
-        "next": next,
-        "previous": previous,
-        "results": results == null
-            ? []
-            : List<dynamic>.from(results!.map((x) => x.toJson())),
-      };
+    "count": count,
+    "next": next,
+    "previous": previous,
+    "results": results == null
+        ? []
+        : List<dynamic>.from(results!.map((x) => x.toJson())),
+  };
 }
 
-class Result {
+class DetectedFace {
   int? id;
-  String? name;
-  String? embedding;
-  String? createdAt;
+  int? user;
+  String? faceId;
+  String? image;
+  String? lastSeen;
 
-  Result({
+  DetectedFace({
     this.id,
-    this.name,
-    this.embedding,
-    this.createdAt,
+    this.user,
+    this.faceId,
+    this.image,
+    this.lastSeen,
   });
 
-  factory Result.fromJson(Map<String, dynamic> json) => Result(
-        id: json["id"],
-        name: json["name"],
-        embedding: json["embedding"],
-        createdAt: json["created_at"],
-      );
+  factory DetectedFace.fromJson(Map<String, dynamic> json) => DetectedFace(
+    id: json["id"],
+    user: json["user"],
+    faceId: json["face_id"],
+    image: json["image"],
+    lastSeen: json["last_seen"],
+  );
 
   Map<String, dynamic> toJson() => {
-        "id": id,
-        "name": name,
-        "embedding": embedding,
-        "created_at": createdAt,
-      };
+    "id": id,
+    "user": user,
+    "face_id": faceId,
+    "image": image,
+    "last_seen": lastSeen,
+  };
 }

@@ -24,7 +24,6 @@ dependencies:
   flutter_secure_storage:
   http:
   flutter_vlc_player:
-  webview_flutter:
   google_sign_in:
 
 dev_dependencies:

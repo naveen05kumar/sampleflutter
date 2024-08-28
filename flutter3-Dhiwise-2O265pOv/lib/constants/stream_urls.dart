@@ -1,7 +1,7 @@
 //lib/constants/stream_urls.dart
 import 'package:get/get.dart';
-import '../Services/api_service.dart';
-import '../Services/shared_services.dart';
+import '../services/api_service.dart';
+import '../services/shared_services.dart';
 import '../model/stream_urls.dart';
 
 class StreamUrlController extends GetxController {
@@ -15,19 +15,24 @@ class StreamUrlController extends GetxController {
   }
 
   getAllTheUrls() async {
-    final loginDetails = UserSharedServices.loginDetails();
-    if (loginDetails != null && loginDetails.streamUrls != null) {
-      final allUrls = loginDetails.streamUrls!;
-      streamUrls.addAll(allUrls.cast<String>());
-      print("streamUrls: $streamUrls");
-    } else {
-      final staticUrlsResponse = await apiService.getStreamUrl("static");
-      final ddnsUrlsResponse = await apiService.getStreamUrl("ddns");
-      final staticUrls = (staticUrlsResponse.streamUrls ?? []).cast<String>();
-      final ddnsUrls = (ddnsUrlsResponse.streamUrls ?? []).cast<String>();
-      streamUrls.addAll(staticUrls);
-      streamUrls.addAll(ddnsUrls);
-      print("streamUrls: $streamUrls");
+    try {
+      final loginDetails = UserSharedServices.loginDetails();
+      if (loginDetails != null && loginDetails.streamUrls != null) {
+        final allUrls = loginDetails.streamUrls!;
+        streamUrls.addAll(allUrls.cast<String>());
+        print("streamUrls: $streamUrls");
+      } else {
+        final staticUrlsResponse = await apiService.getStreamUrl("static");
+        final ddnsUrlsResponse = await apiService.getStreamUrl("ddns");
+        final staticUrls = (staticUrlsResponse.streamUrls ?? []).cast<String>();
+        final ddnsUrls = (ddnsUrlsResponse.streamUrls ?? []).cast<String>();
+        streamUrls.addAll(staticUrls);
+        streamUrls.addAll(ddnsUrls);
+        print("streamUrls: $streamUrls");
+      }
+    } catch (e) {
+      // Handle any errors that occur during the API call
+      print("Error fetching stream URLs: $e");
     }
   }
 }

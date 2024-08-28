@@ -1,25 +1,36 @@
 //lib/model/stream_urls.dart
 import 'dart:convert';
 
-StreamUrls streamUrlsFromJson(String str) =>
-    StreamUrls.fromJson(json.decode(str));
+class StreamUrl {
+  final int id;
+  final String name;
+  final String url;
 
-String streamUrlsToJson(StreamUrls data) => json.encode(data.toJson());
+  StreamUrl({required this.id, required this.name, required this.url});
+
+  factory StreamUrl.fromJson(Map<String, dynamic> json) {
+    return StreamUrl(
+      id: json['id'],
+      name: json['name'],
+      url: json['url'],
+    );
+  }
+}
 
 class StreamUrls {
-  List<String>? streamUrls;
+  final List<StreamUrl> streamUrls;
 
-  StreamUrls({this.streamUrls});
+  StreamUrls({required this.streamUrls});
 
-  factory StreamUrls.fromJson(Map<String, dynamic> json) => StreamUrls(
-    streamUrls: json["stream_urls"] == null
-        ? []
-        : List<String>.from(json["stream_urls"].map((x) => x)),
-  );
+  factory StreamUrls.fromJson(Map<String, dynamic> json) {
+    var list = json['stream_urls'] as List;
+    List<StreamUrl> urlsList = list.map((i) => StreamUrl.fromJson(i)).toList();
 
-  Map<String, dynamic> toJson() => {
-    "stream_urls": streamUrls == null
-        ? []
-        : List<dynamic>.from(streamUrls!.map((x) => x)),
-  };
+    return StreamUrls(streamUrls: urlsList);
+  }
+}
+
+StreamUrls streamUrlsFromJson(String str) {
+  final jsonData = json.decode(str);
+  return StreamUrls.fromJson(jsonData);
 }

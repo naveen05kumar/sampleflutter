@@ -77,9 +77,9 @@ class HomePageOneScreen extends StatelessWidget {
                                         BorderRadius.circular(20.v)),
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(15.v),
-                                      child: RTSPVideoPlayer(
-                                        rtspUrl: streamUrlController
-                                            .streamUrls[index],
+                                      child: WebSocketVideoPlayer(
+                                        webSocketUrl: streamUrlController.streamUrls[index] ?? '',
+                                        authToken: UserSharedServices.loginDetails()?.accessToken ?? '',
                                       ),
                                     ),
                                   ),

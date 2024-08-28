@@ -126,9 +126,9 @@ class DdnsScreen extends StatelessWidget {
             ipAddress: hostnameController.text,
             username: usernameController.text);
         if (response.statusCode == 200 || response.statusCode == 201) {
-          final streamUrlsResponse = await apiService.getStreamUrl("ddns");
-          final urls = streamUrlsResponse.streamUrls ?? [];
-          streamUrlController.streamUrls.addAll(urls);
+          final streamUrlsResponse = await apiService.getStreamUrl("static"); // or "ddns"
+          final urls = streamUrlsResponse.streamUrls;
+          streamUrlController.streamUrls.addAll(urls.map((url) => url.url).toList());
           showSnackBar(jsonDecode(response.body)['message'], context);
           Navigator.pop(context);
         } else {
@@ -136,13 +136,6 @@ class DdnsScreen extends StatelessWidget {
           Navigator.pop(context);
         }
       },
-      buttonTextStyle: TextStyle(fontSize: 20, color: Colors.white),
-      buttonStyle: ElevatedButton.styleFrom(backgroundColor: mainColor),
-      margin: EdgeInsets.only(
-        left: 80.h,
-        right: 80.h,
-        bottom: 22.v,
-      ),
     );
   }
 }

@@ -1,14 +1,15 @@
-//lib/presentation/database_screen.dart
+// lib/presentation/database_screen.dart
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/app_export.dart';
 import '../../widgets/custom_drop_down.dart';
 import '../../model/camera_user_detected.dart';
-import '../../services/api_service.dart'; // Updated import path
+import '../../services/api_service.dart';
 
 class DatabaseScreen extends StatefulWidget {
-  const DatabaseScreen({Key? key}) : super(key: key); // Added const constructor
+  const DatabaseScreen({Key? key}) : super(key: key);
 
   @override
   _DatabaseScreenState createState() => _DatabaseScreenState();
@@ -17,18 +18,14 @@ class DatabaseScreen extends StatefulWidget {
 class _DatabaseScreenState extends State<DatabaseScreen> {
   final ApiService apiService = ApiService();
   late DateTime selectedDate;
-  List<Result> detectedFaces = [];
-  // Removed _dateCheckTimer as it's not necessary
+  List<DetectedFace> detectedFaces = [];
 
   @override
   void initState() {
     super.initState();
     selectedDate = DateTime.now();
     fetchDetectedFaces();
-    // Removed _setupDateCheckTimer() call
   }
-
-  // Removed _setupDateCheckTimer() method and dispose() override
 
   Future<void> fetchDetectedFaces() async {
     try {
@@ -46,8 +43,8 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
     }
   }
 
-  void _renameFace(Result face) async {
-    final TextEditingController controller = TextEditingController(text: face.name);
+  void _renameFace(DetectedFace face) async {
+    final TextEditingController controller = TextEditingController(text: face.faceId);
     final newName = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
@@ -89,11 +86,11 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
         backgroundColor: Colors.black,
         body: Column(
           children: [
-            SizedBox(height: 39.v),
+            SizedBox(height: 39),
             _buildRowDatabase(context),
-            SizedBox(height: 22.v),
+            SizedBox(height: 22),
             _buildDateSelection(),
-            SizedBox(height: 24.v),
+            SizedBox(height: 24),
             _buildDetectedFacesList(),
           ],
         ),
@@ -103,13 +100,13 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
 
   Widget _buildRowDatabase(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 24.h),
+      padding: EdgeInsets.symmetric(horizontal: 24),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             "Database",
-            style: theme.textTheme.headlineSmall?.copyWith(color: Colors.white),
+            style: Theme.of(context).textTheme.headline6?.copyWith(color: Colors.white),
           ),
           IconButton(
             onPressed: () => Navigator.pushNamed(context, AppRoutes.notificationsScreen),
@@ -122,7 +119,7 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
 
   Widget _buildDateSelection() {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 24.h),
+      padding: EdgeInsets.symmetric(horizontal: 24),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -136,7 +133,7 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
 
   Widget _buildDateDropdown() {
     return CustomDropDown(
-      width: 70.h,
+      width: 70,
       hintText: selectedDate.day.toString().padLeft(2, '0'),
       items: List.generate(31, (index) => (index + 1).toString().padLeft(2, '0')),
       onChanged: (value) {
@@ -150,7 +147,7 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
 
   Widget _buildMonthDropdown() {
     return CustomDropDown(
-      width: 140.h,
+      width: 140,
       hintText: DateFormat('MMMM').format(selectedDate),
       items: DateFormat.MMMM().dateSymbols.MONTHS,
       onChanged: (value) {
@@ -164,7 +161,7 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
 
   Widget _buildYearDropdown() {
     return CustomDropDown(
-      width: 95.h,
+      width: 95,
       hintText: selectedDate.year.toString(),
       items: List.generate(10, (index) => (DateTime.now().year - index).toString()),
       onChanged: (value) {
@@ -185,24 +182,24 @@ class _DatabaseScreenState extends State<DatabaseScreen> {
         itemBuilder: (context, index) {
           final face = detectedFaces[index];
           return ListTile(
-            contentPadding: EdgeInsets.symmetric(horizontal: 16.h, vertical: 8.v),
+            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             leading: CircleAvatar(
-              backgroundImage: NetworkImage(face.embedding ?? ''),
-              radius: 30.h,
+              backgroundImage: MemoryImage(base64Decode(face.image ?? '')),
+              radius: 30,
             ),
             title: Text(
-              face.name ?? "Unknown ${face.id}",
+              face.faceId ?? "Unknown",
               style: TextStyle(color: Colors.white),
             ),
             subtitle: Text(
-              face.createdAt ?? "",
+              face.lastSeen ?? "",
               style: TextStyle(color: Colors.grey),
             ),
             trailing: IconButton(
               icon: Icon(Icons.edit, color: Colors.white),
               onPressed: () => _renameFace(face),
             ),
-            tileColor: face.name != null ? Colors.grey[850] : Colors.red[900],
+            tileColor: face.faceId != "unknown" ? Colors.grey[850] : Colors.red[900],
           );
         },
       ),

@@ -6,8 +6,10 @@ import '../widgets/video_player/video_player.dart';
 import '../services/api_service.dart';
 
 class CameraStreamScreen extends StatefulWidget {
-  final String cameraUrl;
-  CameraStreamScreen({required this.cameraUrl});
+  final String webSocketUrl;
+  final String authToken; // Add auth token parameter
+
+  CameraStreamScreen({required this.webSocketUrl, required this.authToken});
 
   @override
   _CameraStreamScreenState createState() => _CameraStreamScreenState();
@@ -25,17 +27,36 @@ class _CameraStreamScreenState extends State<CameraStreamScreen> {
   }
 
   void _connectWebSocket() {
-    channel = WebSocketChannel.connect(
-      Uri.parse('ws://13.200.111.211/ws/camera/${widget.cameraUrl}/'),
-    );
-    channel.stream.listen((message) {
-      final data = jsonDecode(message);
-      setState(() {
-        detectedFaces = (data['detected_faces'] as List)
-            .map((faceData) => DetectedFace.fromJson(faceData))
-            .toList();
-      });
-    });
+    final wsUrl = '${widget.webSocketUrl}?token=${widget.authToken}'; // Include token in the URL
+    try {
+      print('Attempting to connect to WebSocket URL: $wsUrl');
+      channel = WebSocketChannel.connect(Uri.parse(wsUrl));
+
+      channel.stream.listen(
+            (message) {
+          final data = jsonDecode(message);
+          setState(() {
+            detectedFaces = (data['detected_faces'] as List)
+                .map((faceData) => DetectedFace.fromJson(faceData))
+                .toList();
+          });
+        },
+        onError: (error) {
+          print('WebSocket error: $error');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error connecting to camera stream')),
+          );
+        },
+        onDone: () {
+          print('WebSocket connection closed.');
+        },
+      );
+    } catch (e) {
+      print('Failed to connect to WebSocket: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to connect to camera stream')),
+      );
+    }
   }
 
   @override
@@ -52,7 +73,10 @@ class _CameraStreamScreenState extends State<CameraStreamScreen> {
         children: [
           Expanded(
             flex: 3,
-            child: RTSPVideoPlayer(rtspUrl: widget.cameraUrl),
+            child: WebSocketVideoPlayer(
+              webSocketUrl: widget.webSocketUrl,
+              authToken: widget.authToken, // Pass the token
+            ),
           ),
           Expanded(
             flex: 2,
@@ -84,7 +108,6 @@ class _CameraStreamScreenState extends State<CameraStreamScreen> {
     if (newName != null && newName.isNotEmpty) {
       try {
         await apiService.renameFace(face.id, newName);
-        // Update local state
         setState(() {
           final index = detectedFaces.indexWhere((f) => f.id == face.id);
           if (index != -1) {

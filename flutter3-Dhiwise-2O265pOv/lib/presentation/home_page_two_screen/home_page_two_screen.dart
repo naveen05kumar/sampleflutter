@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../Services/shared_services.dart';
 import '../../core/app_export.dart';
 import '../../widgets/app_bar/appbar_image.dart';
 import '../../widgets/app_bar/appbar_leading_image.dart';
@@ -31,8 +32,9 @@ class HomePageTwoScreen extends StatelessWidget {
               Container(
                 height: 500.adaptSize,
                 width: 500.adaptSize,
-                child: RTSPVideoPlayer(
-                  rtspUrl: "",
+                child: WebSocketVideoPlayer(
+                  webSocketUrl: "",
+                  authToken: UserSharedServices.loginDetails()?.accessToken ?? '',
                 ),
               ),
               SizedBox(height: 12.v),

@@ -1,56 +1,71 @@
-//lib/widgets/video_player/video_player.dart
+//video_player.dart
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_vlc_player/flutter_vlc_player.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
-class RTSPVideoPlayer extends StatefulWidget {
-  final String rtspUrl;
+class WebSocketVideoPlayer extends StatefulWidget {
+  final String webSocketUrl;
+  final String authToken; // Add auth token parameter
 
-  RTSPVideoPlayer({required this.rtspUrl});
+  WebSocketVideoPlayer({required this.webSocketUrl, required this.authToken});
 
   @override
-  _RTSPVideoPlayerState createState() => _RTSPVideoPlayerState();
+  _WebSocketVideoPlayerState createState() => _WebSocketVideoPlayerState();
 }
 
-class _RTSPVideoPlayerState extends State<RTSPVideoPlayer> {
-  late VlcPlayerController _vlcPlayerController;
+class _WebSocketVideoPlayerState extends State<WebSocketVideoPlayer> {
+  late WebSocketChannel _channel;
+  Image? _currentFrame;
+  List<Map<String, dynamic>> _detectedFaces = [];
   bool isError = false;
   String errorMessage = '';
 
   @override
   void initState() {
     super.initState();
-    _initializePlayer();
+    _initializeWebSocket();
   }
 
-  @override
-  void dispose() {
-    _vlcPlayerController.dispose();
-    super.dispose();
-  }
-
-  void _initializePlayer() {
-    _vlcPlayerController = VlcPlayerController.network(
-      widget.rtspUrl,
-      hwAcc: HwAcc.full,
-      autoPlay: true,
-      options: VlcPlayerOptions(
-        advanced: VlcAdvancedOptions([
-          VlcAdvancedOptions.networkCaching(2000),
-        ]),
-        rtp: VlcRtpOptions([
-          VlcRtpOptions.rtpOverRtsp(true),
-        ]),
-      ),
-    );
-
-    _vlcPlayerController.addListener(_onPlayerError);
-  }
-
-  void _onPlayerError() {
-    if (_vlcPlayerController.value.hasError) {
+  void _initializeWebSocket() {
+    final wsUrl = '${widget.webSocketUrl}?token=${widget.authToken}'; // Include token in the URL
+    print('Initializing WebSocket with URL: $wsUrl');
+    try {
+      _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
+      _channel.stream.listen(
+            (message) {
+          final data = jsonDecode(message);
+          setState(() {
+            if (data['frame'] != null) {
+              _currentFrame = Image.memory(
+                base64Decode(data['frame']),
+                gaplessPlayback: true,
+              );
+            }
+            if (data['detected_faces'] != null) {
+              _detectedFaces = List<Map<String, dynamic>>.from(data['detected_faces']);
+            }
+          });
+        },
+        onError: (error) {
+          print('WebSocket error: $error');
+          setState(() {
+            isError = true;
+            errorMessage = error.toString();
+          });
+        },
+        onDone: () {
+          print('WebSocket connection closed.');
+          setState(() {
+            isError = true;
+            errorMessage = 'WebSocket connection closed.';
+          });
+        },
+      );
+    } catch (e) {
+      print('Error initializing WebSocket: $e');
       setState(() {
         isError = true;
-        errorMessage = _vlcPlayerController.value.errorDescription ?? 'Unknown error';
+        errorMessage = e.toString();
       });
     }
   }
@@ -69,18 +84,40 @@ class _RTSPVideoPlayerState extends State<RTSPVideoPlayer> {
               setState(() {
                 isError = false;
                 errorMessage = '';
-                _initializePlayer();
+                _initializeWebSocket();
               });
             },
             child: Text('Retry'),
           ),
         ],
       )
-          : VlcPlayer(
-        controller: _vlcPlayerController,
-        aspectRatio: 16 / 9,
-        placeholder: Center(child: CircularProgressIndicator()),
-      ),
+          : _currentFrame != null
+          ? Stack(
+        children: [
+          _currentFrame!,
+          ..._detectedFaces.map((face) {
+            return Positioned(
+              left: face['coordinates']['left'].toDouble(),
+              top: face['coordinates']['top'].toDouble(),
+              child: Container(
+                width: (face['coordinates']['right'] - face['coordinates']['left']).toDouble(),
+                height: (face['coordinates']['bottom'] - face['coordinates']['top']).toDouble(),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.red, width: 2),
+                ),
+                child: Text(face['name'], style: TextStyle(color: Colors.red)),
+              ),
+            );
+          }).toList()
+        ],
+      )
+          : CircularProgressIndicator(),
     );
+  }
+
+  @override
+  void dispose() {
+    _channel.sink.close();
+    super.dispose();
   }
 }
